@@ -2,11 +2,26 @@ import { FormEvent, ReactNode, useMemo, useState } from 'react';
 
 type Lang = 'tc' | 'sc';
 type Answers = { reserve: number; income: number; mortgage: number; retirement: number };
-
 type Situation = { label: string; title: string; text: string; art: 'wallet' | 'home' | 'retirement' };
 
 const whatsappNumber = '85267265788';
 const xhsUrl = 'https://xhslink.cn/m/3zoimXXlrdy';
+
+const lifeProfiles: Record<number, { tc: [string, string]; sc: [string, string] }> = {
+  1: { tc: ['開拓者', '重視自主與行動，習慣先行一步；記得為重要決定保留聆聽空間。'], sc: ['开拓者', '重视自主与行动，习惯先行一步；记得为重要决定保留聆听空间。'] },
+  2: { tc: ['協調者', '重視關係與感受，善於察覺需要；別因遷就而延後自己的決定。'], sc: ['协调者', '重视关系与感受，善于察觉需要；别因迁就而延后自己的决定。'] },
+  3: { tc: ['表達者', '重視創意與溝通，容易帶來活力；穩定節奏會令想法更容易落實。'], sc: ['表达者', '重视创意与沟通，容易带来活力；稳定节奏会令想法更容易落实。'] },
+  4: { tc: ['實踐者', '重視秩序、安全感與持續性；面對變動時可多留一點彈性。'], sc: ['实践者', '重视秩序、安全感与持续性；面对变动时可多留一点弹性。'] },
+  5: { tc: ['探索者', '適應力強，喜歡保留選擇空間；長期目標需要一套可持續的節奏。'], sc: ['探索者', '适应力强，喜欢保留选择空间；长期目标需要一套可持续的节奏。'] },
+  6: { tc: ['守護者', '重視家庭、責任與照顧；承擔別人需要時也要保留自己的位置。'], sc: ['守护者', '重视家庭、责任与照顾；承担别人需要时也要保留自己的位置。'] },
+  7: { tc: ['探求者', '重視深度、邏輯與理解；避免因分析太久而錯過適合的行動時機。'], sc: ['探求者', '重视深度、逻辑与理解；避免因分析太久而错过适合的行动时机。'] },
+  8: { tc: ['實幹家', '重視成果、效率與掌控感；毋須把所有責任都放在自己身上。'], sc: ['实干家', '重视成果、效率与掌控感；无需把所有责任都放在自己身上。'] },
+  9: { tc: ['理想者', '重視意義、包容與影響力；把遠大方向拆成具體步驟會更有力量。'], sc: ['理想者', '重视意义、包容与影响力；把远大方向拆成具体步骤会更有力量。'] }
+};
+
+const reduceNumber = (value: number): number => value > 9
+  ? reduceNumber(String(value).split('').reduce((sum, digit) => sum + Number(digit), 0))
+  : value;
 
 const copy = {
   tc: {
@@ -32,6 +47,7 @@ const copy = {
     aboutText: 'Fenwick 曾從事地產相關工作，後來轉向家庭保障、退休及資產整理。比起先談產品，他更重視先聽清楚家庭現況、整理已有安排，再決定真正需要處理甚麼。',
     aboutPoints: ['先理解現況','整理已有安排','再決定下一步'],
     xhsTitle: '在小紅書，Fenwick 會分享…', xhs: '前往小紅書',
+    lifeKicker: '另一種自我探索', lifeTitle: '30 秒生命靈數', lifeIntro: '輸入出生日期，看看你的核心數字與行動傾向。這個工具與家庭財務檢查分開。', lifeOpen: '展開生命靈數工具', lifeDate: '出生日期', lifeButton: '查看我的核心數字', lifeCore: '你的核心數字', lifeDisclaimer: '生命靈數只作個人探索及交流參考，不構成投資、保險、醫療或其他專業建議。',
     contactTitle: '未必需要完整規劃，可能只係想先問清楚一件事。',
     contactText: '直接在 WhatsApp 留低問題即可，不需要先準備文件，也不需要承諾進一步安排。',
     name: '怎樣稱呼你', question: '你最想先問清楚甚麼？', send: 'WhatsApp 問一個問題', note: '不需要承諾，也不會加入推銷名單。'
@@ -59,26 +75,17 @@ const copy = {
     aboutText: 'Fenwick 曾从事地产相关工作，后来转向家庭保障、退休及资产整理。比起先谈产品，他更重视先听清楚家庭现况、整理已有安排，再决定真正需要处理什么。',
     aboutPoints: ['先理解现况','整理已有安排','再决定下一步'],
     xhsTitle: '在小红书，Fenwick 会分享…', xhs: '前往小红书',
+    lifeKicker: '另一种自我探索', lifeTitle: '30 秒生命灵数', lifeIntro: '输入出生日期，看看你的核心数字与行动倾向。这个工具与家庭财务检查分开。', lifeOpen: '展开生命灵数工具', lifeDate: '出生日期', lifeButton: '查看我的核心数字', lifeCore: '你的核心数字', lifeDisclaimer: '生命灵数只作个人探索及交流参考，不构成投资、保险、医疗或其他专业建议。',
     contactTitle: '未必需要完整规划，可能只想先问清楚一件事。',
     contactText: '直接在 WhatsApp 留下问题即可，不需要先准备文件，也不需要承诺进一步安排。',
     name: '怎样称呼你', question: '你最想先问清楚什么？', send: 'WhatsApp 问一个问题', note: '不需要承诺，也不会加入推销名单。'
   }
 };
 
-function IconBadge({ children }: { children: ReactNode }) {
-  return <span className="icon-badge">{children}</span>;
-}
+function IconBadge({ children }: { children: ReactNode }) { return <span className="icon-badge">{children}</span>; }
 
 function FamilyScene() {
-  return <div className="family-scene" aria-hidden="true">
-    <div className="city-lights" />
-    <div className="house-visual"><div className="roof"/><div className="house-body"><div className="window a"/><div className="window b"/><div className="door"/><div className="shield">✓</div></div></div>
-    <div className="family-figures"><i className="adult one"/><i className="adult two"/><i className="child one"/><i className="child two"/></div>
-    <div className="holo-panel main"><span>家庭全貌</span><b>保障・現金流・退休</b><div className="mini-chart"><i/><i/><i/><i/><i/></div></div>
-    <div className="holo-panel cash"><small>每月現金流</small><strong>+8,450</strong></div>
-    <div className="holo-panel risk"><small>保障概要</small><strong>良好 78%</strong></div>
-    <div className="scene-ring" />
-  </div>;
+  return <div className="family-scene" aria-hidden="true"><div className="city-lights"/><div className="house-visual"><div className="roof"/><div className="house-body"><div className="window a"/><div className="window b"/><div className="door"/><div className="shield">✓</div></div></div><div className="family-figures"><i className="adult one"/><i className="adult two"/><i className="child one"/><i className="child two"/></div><div className="holo-panel main"><span>家庭全貌</span><b>保障・現金流・退休</b><div className="mini-chart"><i/><i/><i/><i/><i/></div></div><div className="holo-panel cash"><small>每月現金流</small><strong>+8,450</strong></div><div className="holo-panel risk"><small>保障概要</small><strong>良好 78%</strong></div><div className="scene-ring"/></div>;
 }
 
 function SituationArt({ type }: { type: Situation['art'] }) {
@@ -87,83 +94,60 @@ function SituationArt({ type }: { type: Situation['art'] }) {
   return <div className="situation-art retirement-art"><span className="sun"/><span className="bench">▰</span><span className="couple">♟ ♟</span></div>;
 }
 
-function SituationCard({ item }: { item: Situation }) {
-  return <article className="situation-card">
-    <div className="situation-copy"><small>{item.label}</small><h3>{item.title}</h3><p>{item.text}</p></div>
-    <SituationArt type={item.art} />
-  </article>;
-}
-
-function ProgressHeader({ current, label }: { current: number; label: string }) {
-  return <div className="progress-header"><span>{label}</span><strong>{current}/4</strong><div className="progress-track"><i style={{ width: `${current * 25}%` }} /></div></div>;
-}
-
-function SocialCard({ type, title, subtitle, href }: { type: 'xhs' | 'wa'; title: string; subtitle: string; href: string }) {
-  return <a className={`social-card ${type}`} href={href} target="_blank" rel="noreferrer"><IconBadge>{type === 'xhs' ? '小' : 'W'}</IconBadge><span><small>{subtitle}</small><b>{title}</b></span><strong>→</strong></a>;
-}
+function SituationCard({ item }: { item: Situation }) { return <article className="situation-card"><div className="situation-copy"><small>{item.label}</small><h3>{item.title}</h3><p>{item.text}</p></div><SituationArt type={item.art}/></article>; }
+function ProgressHeader({ current, label }: { current: number; label: string }) { return <div className="progress-header"><span>{label}</span><strong>{current}/4</strong><div className="progress-track"><i style={{ width: `${current * 25}%` }}/></div></div>; }
+function SocialCard({ type, title, subtitle, href }: { type: 'xhs' | 'wa'; title: string; subtitle: string; href: string }) { return <a className={`social-card ${type}`} href={href} target="_blank" rel="noreferrer"><IconBadge>{type === 'xhs' ? '小' : 'W'}</IconBadge><span><small>{subtitle}</small><b>{title}</b></span><strong>→</strong></a>; }
 
 export default function App() {
   const [lang, setLang] = useState<Lang>('tc');
   const [answers, setAnswers] = useState<Answers>({ reserve: -1, income: -1, mortgage: -1, retirement: -1 });
   const [showResult, setShowResult] = useState(false);
   const [contact, setContact] = useState({ name: '', question: '' });
+  const [birth, setBirth] = useState('');
+  const [lifeNumber, setLifeNumber] = useState<number | null>(null);
   const t = copy[lang];
   const fontClass = useMemo(() => lang === 'sc' ? 'font-sc' : 'font-tc', [lang]);
   const values = Object.values(answers);
-  const completed = values.filter((v) => v >= 0).length;
+  const completed = values.filter((value) => value >= 0).length;
   const complete = completed === 4;
   const priorityIndex = complete ? values.indexOf(Math.min(...values)) : 0;
   const metrics = complete ? [48 + values[0] * 20, 44 + values[1] * 20, 46 + values[3] * 20] : [56, 52, 48];
 
   const updateAnswer = (index: number, value: number) => {
     const keys: (keyof Answers)[] = ['reserve', 'income', 'mortgage', 'retirement'];
-    setAnswers((prev) => ({ ...prev, [keys[index]]: value }));
+    setAnswers((previous) => ({ ...previous, [keys[index]]: value }));
     setShowResult(false);
   };
 
-  const submitContact = (e: FormEvent) => {
-    e.preventDefault();
-    const message = lang === 'tc'
-      ? `你好 Fenwick，我想先問一個問題。\n稱呼：${contact.name}\n問題：${contact.question}`
-      : `你好 Fenwick，我想先问一个问题。\n称呼：${contact.name}\n问题：${contact.question}`;
+  const calculateLifeNumber = (event: FormEvent) => {
+    event.preventDefault();
+    if (!birth) return;
+    setLifeNumber(reduceNumber(Number(birth.replaceAll('-', ''))));
+  };
+
+  const submitContact = (event: FormEvent) => {
+    event.preventDefault();
+    const message = lang === 'tc' ? `你好 Fenwick，我想先問一個問題。\n稱呼：${contact.name}\n問題：${contact.question}` : `你好 Fenwick，我想先问一个问题。\n称呼：${contact.name}\n问题：${contact.question}`;
     window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
   };
 
+  const lifeProfile = lifeNumber ? lifeProfiles[lifeNumber][lang] : null;
+
   return <main className={fontClass}>
-    <header className="topbar">
-      <a className="brand" href="#top"><span className="brand-mark">F</span><span><b>Fenwick</b><small>家庭保障與退休規劃</small></span></a>
-      <nav>{t.nav.map((item, i) => <a key={item} href={['#situations','#check','#about','#contact'][i]}>{item}</a>)}</nav>
-      <div className="header-actions"><a className="header-cta" href="#contact">{lang === 'tc' ? '問一個問題' : '问一个问题'}</a><div className="lang-switch"><button className={lang === 'tc' ? 'active' : ''} onClick={() => setLang('tc')}>繁</button><button className={lang === 'sc' ? 'active' : ''} onClick={() => setLang('sc')}>简</button></div></div>
-    </header>
+    <header className="topbar"><a className="brand" href="#top"><span className="brand-mark">F</span><span><b>Fenwick</b><small>家庭保障與退休規劃</small></span></a><nav>{t.nav.map((item, index) => <a key={item} href={['#situations','#check','#about','#contact'][index]}>{item}</a>)}</nav><div className="header-actions"><a className="header-cta" href="#contact">{lang === 'tc' ? '問一個問題' : '问一个问题'}</a><div className="lang-switch"><button className={lang === 'tc' ? 'active' : ''} onClick={() => setLang('tc')}>繁</button><button className={lang === 'sc' ? 'active' : ''} onClick={() => setLang('sc')}>简</button></div></div></header>
 
-    <section className="hero" id="top">
-      <div className="hero-copy"><span className="eyebrow">{t.tag}</span><h1>{t.hero}</h1><p>{t.heroText}</p><div className="actions"><a className="btn primary" href="#check">{t.primary}</a><a className="btn ghost" href="#situations">{t.secondary}</a></div><div className="trust-strip">{t.trust.map((item, i) => <span key={item}><IconBadge>{['✓','▣','↯'][i]}</IconBadge>{item}</span>)}</div></div>
-      <FamilyScene />
-    </section>
+    <section className="hero" id="top"><div className="hero-copy"><span className="eyebrow">{t.tag}</span><h1>{t.hero}</h1><p>{t.heroText}</p><div className="actions"><a className="btn primary" href="#check">{t.primary}</a><a className="btn ghost" href="#situations">{t.secondary}</a></div><div className="trust-strip">{t.trust.map((item, index) => <span key={item}><IconBadge>{['✓','▣','↯'][index]}</IconBadge>{item}</span>)}</div></div><FamilyScene/></section>
 
-    <section className="situations" id="situations">
-      <div className="center-heading"><span>REAL FAMILY QUESTIONS</span><h2>{t.situationsTitle}</h2></div>
-      <div className="situation-grid">{t.situations.map((item) => <SituationCard key={item.title} item={item} />)}</div>
-    </section>
+    <section className="situations" id="situations"><div className="center-heading"><span>REAL FAMILY QUESTIONS</span><h2>{t.situationsTitle}</h2></div><div className="situation-grid">{t.situations.map((item) => <SituationCard key={item.title} item={item}/>)}</div></section>
 
-    <section className="safety-check" id="check">
-      <div className="check-shell">
-        <div className="check-intro"><span>{t.checkKicker}</span><h2>{t.checkTitle}</h2><p>{t.checkText}</p><ProgressHeader current={completed} label={t.progress} /></div>
-        <div className="question-panel">{t.qs.map((q, i) => <fieldset key={q}><legend><b>0{i + 1}</b><span>{q}</span></legend><div>{t.opts[i].map((option, value) => <button type="button" className={values[i] === value ? 'selected' : ''} onClick={() => updateAnswer(i, value)} key={option}>{option}</button>)}</div></fieldset>)}<button className="btn light check-button" disabled={!complete} onClick={() => setShowResult(true)}>{t.resultButton}</button></div>
-        <aside className="result-panel"><small>{t.resultTitle}</small>{t.resultRows.map((row, i) => <div className="result-row" key={row}><span>{row}</span><b>{metrics[i]}%</b><i><u style={{ width: `${metrics[i]}%` }} /></i></div>)}<div className="result-focus"><small>{lang === 'tc' ? '目前最值得先處理' : '目前最值得先处理'}</small><strong>{showResult ? t.priorities[priorityIndex] : lang === 'tc' ? '完成檢查後即時顯示' : '完成检查后即时显示'}</strong></div></aside>
-      </div>
-    </section>
+    <section className="safety-check" id="check"><div className="check-shell"><div className="check-intro"><span>{t.checkKicker}</span><h2>{t.checkTitle}</h2><p>{t.checkText}</p><ProgressHeader current={completed} label={t.progress}/></div><div className="question-panel">{t.qs.map((question, index) => <fieldset key={question}><legend><b>0{index + 1}</b><span>{question}</span></legend><div>{t.opts[index].map((option, value) => <button type="button" className={values[index] === value ? 'selected' : ''} onClick={() => updateAnswer(index, value)} key={option}>{option}</button>)}</div></fieldset>)}<button className="btn light check-button" disabled={!complete} onClick={() => setShowResult(true)}>{t.resultButton}</button></div><aside className="result-panel"><small>{t.resultTitle}</small>{t.resultRows.map((row, index) => <div className="result-row" key={row}><span>{row}</span><b>{metrics[index]}%</b><i><u style={{ width: `${metrics[index]}%` }}/></i></div>)}<div className="result-focus"><small>{lang === 'tc' ? '目前最值得先處理' : '目前最值得先处理'}</small><strong>{showResult ? t.priorities[priorityIndex] : lang === 'tc' ? '完成檢查後即時顯示' : '完成检查后即时显示'}</strong></div></aside></div></section>
 
-    <section className="about-xhs" id="about">
-      <div className="about-panel"><div className="avatar-visual"><span>F</span></div><div><span className="section-kicker">ABOUT</span><h2>{t.aboutTitle}</h2><p>{t.aboutText}</p><div className="about-points">{t.aboutPoints.map((point, i) => <span key={point}><IconBadge>{['◎','▣','↗'][i]}</IconBadge>{point}</span>)}</div></div></div>
-      <div className="xhs-panel"><div><span className="section-kicker">SOCIAL NOTES</span><h2>{t.xhsTitle}</h2><p>{lang === 'tc' ? '家庭保障、退休準備、資產整理及生活選擇。' : '家庭保障、退休准备、资产整理及生活选择。'}</p><a href={xhsUrl} target="_blank" rel="noreferrer">{t.xhs} →</a></div><div className="phone-visual"><i/><i/><i/></div></div>
-    </section>
+    <section className="about-xhs" id="about"><div className="about-panel"><div className="avatar-visual"><span>F</span></div><div><span className="section-kicker">ABOUT</span><h2>{t.aboutTitle}</h2><p>{t.aboutText}</p><div className="about-points">{t.aboutPoints.map((point, index) => <span key={point}><IconBadge>{['◎','▣','↗'][index]}</IconBadge>{point}</span>)}</div></div></div><div className="xhs-panel"><div><span className="section-kicker">SOCIAL NOTES</span><h2>{t.xhsTitle}</h2><p>{lang === 'tc' ? '家庭保障、退休準備、資產整理及生活選擇。' : '家庭保障、退休准备、资产整理及生活选择。'}</p><a href={xhsUrl} target="_blank" rel="noreferrer">{t.xhs} →</a></div><div className="phone-visual"><i/><i/><i/></div></div></section>
 
-    <section className="contact" id="contact">
-      <div className="contact-copy"><span className="section-kicker">PRIVATE MESSAGE</span><h2>{t.contactTitle}</h2><p>{t.contactText}</p><div className="social-stack"><SocialCard type="wa" title="WhatsApp" subtitle="+852 6726 5788" href={`https://wa.me/${whatsappNumber}`} /><SocialCard type="xhs" title={t.xhs} subtitle="Fenwick276878" href={xhsUrl} /></div><small>{t.note}</small></div>
-      <form onSubmit={submitContact}><label>{t.name}<input required value={contact.name} onChange={(e) => setContact({ ...contact, name: e.target.value })} /></label><label>{t.question}<textarea required rows={5} value={contact.question} onChange={(e) => setContact({ ...contact, question: e.target.value })} /></label><button className="btn primary" type="submit">{t.send}</button></form>
-    </section>
+    <section className="life-tool" id="life-number"><details><summary><div className="life-symbol" aria-hidden="true"><i>1</i><i>3</i><i>6</i><i>9</i></div><div><span className="section-kicker">{t.lifeKicker}</span><h2>{t.lifeTitle}</h2><p>{t.lifeIntro}</p></div><strong>{t.lifeOpen} ＋</strong></summary><div className="life-content"><form onSubmit={calculateLifeNumber}><label>{t.lifeDate}<input type="date" required value={birth} onChange={(event) => { setBirth(event.target.value); setLifeNumber(null); }}/></label><button className="btn primary" type="submit">{t.lifeButton}</button></form>{lifeProfile && <aside className="life-result"><div className="life-orbit"><span>{lifeNumber}</span></div><div><small>{t.lifeCore}</small><h3>{lifeProfile[0]}</h3><p>{lifeProfile[1]}</p></div></aside>}<small className="life-disclaimer">{t.lifeDisclaimer}</small></div></details></section>
 
-    <footer><div><b>Fenwick</b><span>家庭保障與退休規劃</span></div><nav><a href="#about">About</a><a href="#check">Check</a><a href={xhsUrl}>Xiaohongshu</a><a href="#contact">Contact</a></nav><small>© 2026 Fenwick</small></footer>
+    <section className="contact" id="contact"><div className="contact-copy"><span className="section-kicker">PRIVATE MESSAGE</span><h2>{t.contactTitle}</h2><p>{t.contactText}</p><div className="social-stack"><SocialCard type="wa" title="WhatsApp" subtitle="+852 6726 5788" href={`https://wa.me/${whatsappNumber}`}/><SocialCard type="xhs" title={t.xhs} subtitle="Fenwick276878" href={xhsUrl}/></div><small>{t.note}</small></div><form onSubmit={submitContact}><label>{t.name}<input required value={contact.name} onChange={(event) => setContact({ ...contact, name: event.target.value })}/></label><label>{t.question}<textarea required rows={5} value={contact.question} onChange={(event) => setContact({ ...contact, question: event.target.value })}/></label><button className="btn primary" type="submit">{t.send}</button></form></section>
+
+    <footer><div><b>Fenwick</b><span>家庭保障與退休規劃</span></div><nav><a href="#about">About</a><a href="#check">Check</a><a href="#life-number">Life Number</a><a href={xhsUrl}>Xiaohongshu</a><a href="#contact">Contact</a></nav><small>© 2026 Fenwick</small></footer>
   </main>;
 }
